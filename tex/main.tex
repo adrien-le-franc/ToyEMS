@@ -1,0 +1,45 @@
+\documentclass[10pt,a4paper]{article}
+%\usepackage[utf8]{inputenc}
+%\usepackage[T1]{fontenc}
+%\usepackage[french]{babel}
+
+\usepackage{commandes}
+
+\begin{document}
+
+\title{\textbf{Toy Energy Management System}}
+\author{Adrien Le Franc}
+\date{}
+\maketitle
+
+\section{Introduction}
+
+We consider a simple Energy Management System (EMS) for an electrical network composed with a solar panel, a battery, a connexion to the global network and an electrical demand. The aim of this system is to operate the battery so as to minimize the energy importation over a time period \horizon, while dealing with the uncertain energy demand and solar production. This goal formulates as a stochastic optimization problem. We now introduce notations for the problem formulation. All capital letters will denote random variables (e.g. $X$) while lower case will be devoted to realization of random variables (e.g. $x$).
+
+\begin{itemize}
+\item $\State_t$ is the battery stock at time $t$
+\item $\Control_t$ is the energy exchanged from the system to the battery. If the realization $\control_t$ is positive (negative) the battery is being charged (discharged) over the time segment $\nc{t \eqsepv t+1}$
+\item $\Uncertain_{1, t}$ is the energy produced by the solar panel over the time segment $\nc{t-1 \eqsepv t}$
+\item $\Uncertain_{2, t}$ is the energy demand over the time segment $\nc{t \eqsepv t+1}$
+\end{itemize}
+
+\noindent The energy is measured in kilowatt-heure, the time horizon for this problem is 24h and decisions are taken every $\Delta t$ = 15 min. We consider a 13,5 kWh battery which restricts the state space to $\XX_t = \nc{0 \eqsepv 13,5}$. The dynamics of the system is as follows:
+\[\State_{t+1} =  \dynamics(\State_t \eqsepv \Control_t) = \State_t + \rho_c \Control_t^+ - \rho_d^{-1} \Control_t^-\]
+where $\rho_c$ ($\rho_d$) is a charge (discharge) efficiency coefficient. This dynamics restricts control spaces $\UU_t$ to amissible values which respect $\state_{t+1} \in \nc{0 \eqsepv 13,5}$. Over any time episode $\nc{t \eqsepv t+1}$ the EMS imports $E_{t+1}$ kWh to compensate other energy flows:
+\[E_{t+1} + \Uncertain_{1, t+1} - \Uncertain_{2, t+1} - \Control_t = 0\]
+Thus, using a single noise variable $\Uncertain_t = \Uncertain_{1, t} - \Uncertain_{2, t}$ and considering the (deterministic) energy price $(p_t)_{t=0..\horizon-1}$, the cost to pay for episode $\nc{t \eqsepv t+1}$ is:
+\[L_t(\Control_t \eqsepv \Uncertain_{t+1}) = p_t \times \Max \big(0 \eqsepv \Uncertain_{t+1} + \Control_t \big)\]
+
+\noindent The non-anticipativity constraint imposes that the decision maker does not access information about the realizations of future noises. Given the filtration $\mathcal{F}_t = \sigma(\Uncertain_1, ..., \Uncertain_t)$, this constraint is expressed by $\sigma(\Control_t) \subset \mathcal{F}_t$. It is equivalently formulated 
+\[\Control_t = \pi_t(\Uncertain_1, ..., \Uncertain_t) \]
+\noindent where $(\pi_t)_{t=0..\horizon-1}$ are policy functions which we restrict to $\pi_t(\State_t, \Uncertain_t)$ in this work. \rouge{Citations?} 
+
+\vspace{0.5cm}
+
+\noindent Eventually, the stochastic optimization problem that we solve formulates as follows:
+
+\begin{equation}
+\Min_{\Control} \ \espe \sum_{s=0}^{\horizon-1} L_s(\Control_s \eqsepv \Uncertain_{s+1})
+\end{equation}
+
+\end{document} 

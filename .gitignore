@@ -1,0 +1,9 @@
+*.ipynb
+*.log
+*.gz
+*.pdf
+*.aux
+*.dvi
+*.sty
+commandes.tex
+data/
