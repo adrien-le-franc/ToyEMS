@@ -7,3 +7,5 @@
 *.sty
 commandes.tex
 data/
+*.bbl
+*.blg

@@ -1,9 +1,9 @@
 \documentclass[10pt,a4paper]{article}
 %\usepackage[utf8]{inputenc}
 %\usepackage[T1]{fontenc}
-%\usepackage[french]{babel}
+%\usepackage[english]{babel}
 
-\usepackage{commandes}
+\usepackage{cermics}
 
 \begin{document}
 
@@ -14,32 +14,78 @@
 
 \section{Introduction}
 
-We consider a simple Energy Management System (EMS) for an electrical network composed with a solar panel, a battery, a connexion to the global network and an electrical demand. The aim of this system is to operate the battery so as to minimize the energy importation over a time period \horizon, while dealing with the uncertain energy demand and solar production. This goal formulates as a stochastic optimization problem. We now introduce notations for the problem formulation. All capital letters will denote random variables (e.g. $X$) while lower case will be devoted to realization of random variables (e.g. $x$).
+We consider a simple Energy Management System (EMS) for an electrical network composed with a solar panel, a battery, a connexion to the global network and an electrical demand. The aim of this system is to operate the battery so as to minimize the energy importation over a time period \horizon, while dealing with the uncertain energy demand and solar production. This goal formulates as a stochastic optimization problem. We first introduce notations for the problem formulation. All capital letters will denote random variables (e.g. $X$) while lower case will be devoted to realizations of random variables (e.g. $x$).
 
 \begin{itemize}
 \item $\State_t$ is the battery stock at time $t$
-\item $\Control_t$ is the energy exchanged from the system to the battery. If the realization $\control_t$ is positive (negative) the battery is being charged (discharged) over the time segment $\nc{t \eqsepv t+1}$
+\item $\Control_t$ is the energy exchanged from the system to the battery. If the realization $\control_t$ is positive (negative) the battery is being charged (discharged) over the time segment $\nc{t-1 \eqsepv t}$
 \item $\Uncertain_{1, t}$ is the energy produced by the solar panel over the time segment $\nc{t-1 \eqsepv t}$
-\item $\Uncertain_{2, t}$ is the energy demand over the time segment $\nc{t \eqsepv t+1}$
+\item $\Uncertain_{2, t}$ is the energy demand over the time segment $\nc{t-1 \eqsepv t}$
 \end{itemize}
 
-\noindent The energy is measured in kilowatt-heure, the time horizon for this problem is 24h and decisions are taken every $\Delta t$ = 15 min. We consider a 13,5 kWh battery which restricts the state space to $\XX_t = \nc{0 \eqsepv 13,5}$. The dynamics of the system is as follows:
-\[\State_{t+1} =  \dynamics(\State_t \eqsepv \Control_t) = \State_t + \rho_c \Control_t^+ - \rho_d^{-1} \Control_t^-\]
-where $\rho_c$ ($\rho_d$) is a charge (discharge) efficiency coefficient. This dynamics restricts control spaces $\UU_t$ to amissible values which respect $\state_{t+1} \in \nc{0 \eqsepv 13,5}$. Over any time episode $\nc{t \eqsepv t+1}$ the EMS imports $E_{t+1}$ kWh to compensate other energy flows:
+\noindent The energy is measured in kilowatt-heure, the time horizon for this problem is 24h and decisions are taken every $\Delta t$ = 15 min. The battery is controlled over \horizon = 96 consecutive time intervals in the \textit{hazard-decision} framework, which means that controls $\Control_t$ are decided after observing the corresponding noise $\Uncertain_t$ for $t \in \{1...T\}$. We consider a 13,5 kWh battery which restricts the state space to $\XX_t = \nc{0 \eqsepv 13,5}$. The dynamics of the system is as follows:
+\[\State_{t+1} =  \dynamics(\State_t \eqsepv \Control_t) = \State_t + \rho_c \Control_{t+1}^+ - \rho_d^{-1} \Control_{t+1}^-\]
+where $\rho_c$ ($\rho_d$) is a charge (discharge) efficiency coefficient. This dynamics restricts control spaces $\UU_t$ to admissible values which respect $\state_t \in \nc{0 \eqsepv 13,5}$. Over any time episode $\nc{t \eqsepv t+1}$ the EMS imports $E_{t+1}$ kWh to compensate other energy flows:
 \[E_{t+1} + \Uncertain_{1, t+1} - \Uncertain_{2, t+1} - \Control_t = 0\]
-Thus, using a single noise variable $\Uncertain_t = \Uncertain_{1, t} - \Uncertain_{2, t}$ and considering the (deterministic) energy price $(p_t)_{t=0..\horizon-1}$, the cost to pay for episode $\nc{t \eqsepv t+1}$ is:
-\[L_t(\Control_t \eqsepv \Uncertain_{t+1}) = p_t \times \Max \big(0 \eqsepv \Uncertain_{t+1} + \Control_t \big)\]
+Thus, using a single noise variable $\Uncertain_t = \Uncertain_{2, t} - \Uncertain_{1, t}$ and considering the (deterministic) energy price $(p_t)_{t=0..\horizon-1}$, the cost to pay for episode $\nc{t \eqsepv t+1}$ is:
+\[L_t(\Control_{t+1} \eqsepv \Uncertain_{t+1}) = p_t \times \Max \big(0 \eqsepv \Uncertain_{t+1} + \Control_{t+1} \big)\]
 
 \noindent The non-anticipativity constraint imposes that the decision maker does not access information about the realizations of future noises. Given the filtration $\mathcal{F}_t = \sigma(\Uncertain_1, ..., \Uncertain_t)$, this constraint is expressed by $\sigma(\Control_t) \subset \mathcal{F}_t$. It is equivalently formulated 
 \[\Control_t = \pi_t(\Uncertain_1, ..., \Uncertain_t) \]
-\noindent where $(\pi_t)_{t=0..\horizon-1}$ are policy functions which we restrict to $\pi_t(\State_t, \Uncertain_t)$ in this work. \rouge{Citations?} 
+\noindent where $(\pi_t)_{t=1..\horizon}$ are policy functions which we restrict to $\pi_t(\State_{t-1}, \Uncertain_t)$ in this work. \rouge{Citations?} 
 
 \vspace{0.5cm}
 
 \noindent Eventually, the stochastic optimization problem that we solve formulates as follows:
 
 \begin{equation}
-\Min_{\Control} \ \espe \sum_{s=0}^{\horizon-1} L_s(\Control_s \eqsepv \Uncertain_{s+1})
+\begin{aligned}
+& \Min_{\pi_1 ... \pi_\horizon} 
+& & \besp{\sum_{t=0}^{\horizon-1} L_t(\Control_{t+1} \eqsepv \Uncertain_{t+1})} \\
+&&& \State_{t+1} =  \dynamics(\State_t \eqsepv \Control_{t+1}) \\
+&&& 0 \leq \State_t \leq 13,5 \\
+&&& \Control_t = \pi_t(\State_{t-1}, \Uncertain_t)
+\end{aligned}
+\label{eq1.1}
 \end{equation}
+
+\section{Stochastic Dynamic Programming}
+
+Stochastic dynamic programming (SDP) introduces $\textit{value functions}$ defined as the cost-to-go given a time and state position:
+\[ V_t(x) = \Min_{\pi_{t+1} ... \pi_\horizon} \besp{\sum_{s=t}^{\horizon-1} L_s(\Control_{s+1} \eqsepv \Uncertain_{s+1}) | \State_t = x} \]
+
+\noindent Such functions are dynamically connected in time by the $\textit{Bellman equation}$
+\begin{equation}
+\begin{aligned}
+V_T(x) &=  0  \\
+V_t(x) &= \Min_{\pi_{t+1}} \ \mathbb{E}_{\mu_{t+1}^{off}} \bc{L_t(\Control_{t+1} \eqsepv \Uncertain_{t+1}) + V_{t+1}(x + \rho_c \Control_{t+1}^+ -\rho_d^{-1} \Control_{t+1}^-)} \\
+&= \mathbb{E}_{\mu_{t+1}^{off}} \bc{ \Min_u \ba{L_t(u \eqsepv \Uncertain_{t+1}) + V_{t+1}(x + \rho_c u^+ -\rho_d^{-1} u^-)}} 
+\end{aligned}
+\end{equation}
+
+\noindent Here $\mu_{t+1}^{off}$ designs an offline (training) probability distribution on $\UNCERTAIN_{t+1}$ which is used to compute recursively the value functions $\bp{V_t(x)}_{t \in {1..T}, x \in \STATE}$. After this offline backward computation step, optimal policies are computed online given an initial state $x_0$ and observing noisy realizations $w_t$ before deciding on the control $u_t$:
+\[ \pi_t(x_{t-1} \eqsepv w_t) \in \argmin_u{\ba{L_{t-1}(u \eqsepv w_t) + V_t(x + \rho_c u^+ - \rho^{-1}_d u^-)}} \]
+
+\section{Risk Averse SDP}
+
+\subsection{Average value at risk}
+
+\noindent The $\alpha$ value at risk of a real value random variable $X$ is the tightest upper bound on the realizations of $X$ which is satisfied with probability at least $1-\alpha$:
+\[ V@R_{\alpha}\nc{X} = \inf \na{t: \ \nprob{X \leq t} \geq 1-\alpha } \] 
+
+\noindent Constraining $V@R_\alpha\nc{X}$ enables to penalize worst-case scenarios and is sometimes preferred to plain expectation minimization. However imposing $V@R_\alpha \leq \tau$ is equivalent to enforcing $\mathbb{E}\nc{\boldsymbol{1}_{\na{\tau, \infty}}(X)} \leq \alpha$ which reveals that the constraint is non-convex. The $\alpha$ average value at risk \footnote{also called conditional value at risk $CV@R_\alpha[X]$} is defined as 
+\[ AV@R_\alpha\nc{X} = \inf \na{t + \alpha^{-1} \mathbb{E}\nc{X-t}_+ } \]
+\noindent Imposing $AV@R_\alpha\nc{X} \leq \tau$ is a conservative convex approximation of the previous constraint (\cite{shapiro2009lectures} chapter 6.2.4). $AV@R_\alpha[X]$ can be expressed explicitly from the value at risk:
+\[ AV@R_{\alpha}[X] = V@R_\alpha[X] + \alpha^{-1}\mathbb{E}\nc{X-V@R_\alpha[X]}_+ = \mathbb{E}\nc{X|X \geq V@R_\alpha[X]} \]
+
+\noindent We then build a new risk measure defined as a weighted sum of the expectation and the average value at risk:
+\[ \rho_\lambda\nc{X} = (1-\lambda) \mathbb{E}\nc{X} + \lambda AV@R_\alpha\nc{X} \]
+
+\noindent A major advantage of this risk measure is that it is a coherent risk measure (\cite{shapiro2009lectures} chapter 6.3) and that we can write dynamic programming equations to solve the nested risk averse stochastic optimization problem arising when switching expectations with $\rho_\lambda$ in \eqref{eq1.1}
+
+\subsection{Dynamic programming}
+
+\bibliographystyle{plain}
+\bibliography{mybib}
 
 \end{document} 

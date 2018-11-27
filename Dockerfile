@@ -1,7 +1,7 @@
 FROM continuumio/anaconda3:5.3.0
 
 RUN apt-get update && \
-  	apt-get install -y --no-install-recommends wget hdf5-tools && \
+  	apt-get install -y --no-install-recommends wget build-essential hdf5-tools && \
   	rm -rf /var/lib/apt/lists/* 
 
 
@@ -25,9 +25,22 @@ RUN julia -e 'Pkg.init()' && \
 	julia -e 'Pkg.add("IJulia")' && \
 	julia -e 'Pkg.add("HDF5")' && \
 	julia -e 'Pkg.add("JLD")' && \
-	julia -e 'Pkg.add("Plots")' 
+	julia -e 'Pkg.add("Plots")' && \
+	julia -e 'Pkg.add("ProgressMeter")' && \
+	julia -e 'Pkg.add("Clustering")' && \
+	julia -e 'Pkg.add("StatsBase")'
 
-RUN julia -e 'using IJulia' && \
+RUN julia -e 'using IJulia; IJulia.installkernel("Julia nodeps", "--depwarn=no")' && \
 	julia -e 'using HDF5' && \
 	julia -e 'using JLD' && \
-	julia -e 'using Plots'
+	julia -e 'using Plots' && \
+	julia -e 'using ProgressMeter' && \
+	julia -e 'using Clustering' && \
+	julia -e 'using StatsBase'
+
+# install Clp solver and JuMP for PL problems
+
+RUN julia -e 'Pkg.add("Clp")' && \
+	julia -e 'using Clp' && \
+	julia -e 'Pkg.add("JuMP")' && \
+	julia -e 'using JuMP'
