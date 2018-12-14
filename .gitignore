@@ -9,3 +9,4 @@ commandes.tex
 data/
 *.bbl
 *.blg
+tex/images/*

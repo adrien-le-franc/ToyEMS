@@ -4,9 +4,11 @@
 %\usepackage[english]{babel}
 
 \usepackage{cermics}
+\usepackage{graphicx}
+\usepackage{subfig}
 
 \begin{document}
-
+	
 \title{\textbf{Toy Energy Management System}}
 \author{Adrien Le Franc}
 \date{}
@@ -24,15 +26,15 @@ We consider a simple Energy Management System (EMS) for an electrical network co
 \end{itemize}
 
 \noindent The energy is measured in kilowatt-heure, the time horizon for this problem is 24h and decisions are taken every $\Delta t$ = 15 min. The battery is controlled over \horizon = 96 consecutive time intervals in the \textit{hazard-decision} framework, which means that controls $\Control_t$ are decided after observing the corresponding noise $\Uncertain_t$ for $t \in \{1...T\}$. We consider a 13,5 kWh battery which restricts the state space to $\XX_t = \nc{0 \eqsepv 13,5}$. The dynamics of the system is as follows:
-\[\State_{t+1} =  \dynamics(\State_t \eqsepv \Control_t) = \State_t + \rho_c \Control_{t+1}^+ - \rho_d^{-1} \Control_{t+1}^-\]
+\[\State_{t+1} =  \dynamics(\State_t \eqsepv \Control_{t+1}) = \State_t + \rho_c \Control_{t+1}^+ - \rho_d^{-1} \Control_{t+1}^-\]
 where $\rho_c$ ($\rho_d$) is a charge (discharge) efficiency coefficient. This dynamics restricts control spaces $\UU_t$ to admissible values which respect $\state_t \in \nc{0 \eqsepv 13,5}$. Over any time episode $\nc{t \eqsepv t+1}$ the EMS imports $E_{t+1}$ kWh to compensate other energy flows:
 \[E_{t+1} + \Uncertain_{1, t+1} - \Uncertain_{2, t+1} - \Control_t = 0\]
 Thus, using a single noise variable $\Uncertain_t = \Uncertain_{2, t} - \Uncertain_{1, t}$ and considering the (deterministic) energy price $(p_t)_{t=0..\horizon-1}$, the cost to pay for episode $\nc{t \eqsepv t+1}$ is:
 \[L_t(\Control_{t+1} \eqsepv \Uncertain_{t+1}) = p_t \times \Max \big(0 \eqsepv \Uncertain_{t+1} + \Control_{t+1} \big)\]
 
-\noindent The non-anticipativity constraint imposes that the decision maker does not access information about the realizations of future noises. Given the filtration $\mathcal{F}_t = \sigma(\Uncertain_1, ..., \Uncertain_t)$, this constraint is expressed by $\sigma(\Control_t) \subset \mathcal{F}_t$. It is equivalently formulated 
+\noindent The non-anticipativity constraint imposes that the decision maker does not access information about the realizations of future noises. Given the filtration $\mathcal{F}_t = \sigma(\Uncertain_1, ..., \Uncertain_t)$, this constraint is expressed by $\sigma(\Control_t) \subset \mathcal{F}_t$. From the Doob lemma (\cite{carpentier2015stochastic} chapter 3.4.4), it is equivalently formulated 
 \[\Control_t = \pi_t(\Uncertain_1, ..., \Uncertain_t) \]
-\noindent where $(\pi_t)_{t=1..\horizon}$ are policy functions which we restrict to $\pi_t(\State_{t-1}, \Uncertain_t)$ in this work. \rouge{Citations?} 
+\noindent where $(\pi_t)_{t=1..\horizon}$ are policy functions which we restrict to $\pi_t(\State_{t-1}, \Uncertain_t)$ in this work.
 
 \vspace{0.5cm}
 
@@ -54,16 +56,17 @@ Thus, using a single noise variable $\Uncertain_t = \Uncertain_{2, t} - \Uncerta
 Stochastic dynamic programming (SDP) introduces $\textit{value functions}$ defined as the cost-to-go given a time and state position:
 \[ V_t(x) = \Min_{\pi_{t+1} ... \pi_\horizon} \besp{\sum_{s=t}^{\horizon-1} L_s(\Control_{s+1} \eqsepv \Uncertain_{s+1}) | \State_t = x} \]
 
-\noindent Such functions are dynamically connected in time by the $\textit{Bellman equation}$
+\noindent Assuming that noises $\np{\Uncertain_1, ..., \Uncertain_T}$ are independent, such functions are dynamically connected in time by the $\textit{Bellman equation}$
 \begin{equation}
 \begin{aligned}
 V_T(x) &=  0  \\
 V_t(x) &= \Min_{\pi_{t+1}} \ \mathbb{E}_{\mu_{t+1}^{off}} \bc{L_t(\Control_{t+1} \eqsepv \Uncertain_{t+1}) + V_{t+1}(x + \rho_c \Control_{t+1}^+ -\rho_d^{-1} \Control_{t+1}^-)} \\
 &= \mathbb{E}_{\mu_{t+1}^{off}} \bc{ \Min_u \ba{L_t(u \eqsepv \Uncertain_{t+1}) + V_{t+1}(x + \rho_c u^+ -\rho_d^{-1} u^-)}} 
 \end{aligned}
+\label{eq2.1}
 \end{equation}
 
-\noindent Here $\mu_{t+1}^{off}$ designs an offline (training) probability distribution on $\UNCERTAIN_{t+1}$ which is used to compute recursively the value functions $\bp{V_t(x)}_{t \in {1..T}, x \in \STATE}$. After this offline backward computation step, optimal policies are computed online given an initial state $x_0$ and observing noisy realizations $w_t$ before deciding on the control $u_t$:
+\noindent Here $\mu_{t+1}^{off}$ designs an offline (training) probability measure on the $\sigma$-algebra $\mathcal{W}_{t+1}$ attached to the noise space $\UNCERTAIN_{t+1}$. Equation \eqref{eq2.1} is used to compute recursively the value functions $\bp{V_t(x)}_{t \in {1..T}, x \in \STATE}$. After this offline backward computation step, optimal policies are computed online given an initial state $x_0$ and observing noisy realizations $w_t$ before deciding on the control $u_t$:
 \[ \pi_t(x_{t-1} \eqsepv w_t) \in \argmin_u{\ba{L_{t-1}(u \eqsepv w_t) + V_t(x + \rho_c u^+ - \rho^{-1}_d u^-)}} \]
 
 \section{Risk Averse SDP}
@@ -84,6 +87,43 @@ V_t(x) &= \Min_{\pi_{t+1}} \ \mathbb{E}_{\mu_{t+1}^{off}} \bc{L_t(\Control_{t+1}
 \noindent A major advantage of this risk measure is that it is a coherent risk measure (\cite{shapiro2009lectures} chapter 6.3) and that we can write dynamic programming equations to solve the nested risk averse stochastic optimization problem arising when switching expectations with $\rho_\lambda$ in \eqref{eq1.1}
 
 \subsection{Dynamic programming}
+
+\noindent In order to write a risk-averse formulation of \eqref{eq1.1} we take a backward approach of the multi stage problem. When observing $\uncertain_T$ in state $x_{T-1}$, taking the last decision $\control_T$ formulates as follows:
+\[ \Min_{\control \in \mathcal{U}(x_{T-1})} L_{T-1} \np{\control, w_\horizon} \]
+
+\noindent In the previous stage, the goal is to minimmize the immediate cost $L_{T-2}$ while minimizing the cost to go evaluated with the risk measure $\rho_\lambda$ and a probability measure $\mu_T$ on the $\sigma$-algebra $\mathcal{W}_T$ attached to the noise space $\UNCERTAIN_T$:
+\[ \Min_{\control \in \mathcal{U}(x_{T-2})} L_{T-2} \np{\control, w_{\horizon-1}} + \rho_\lambda^{\mu_T} \bc{\inf_{\control_T \in \mathcal{U}(x_{T-1})} L_{T-1} \np{\control_T, w_\horizon}}\]
+
+\noindent Eventually,  the global risk-averse EMS problem can be written in a nested formulation:
+\begin{equation} 
+\Min_{\control \in \mathcal{U}(x_0)} L_0 \np{\control, w_1} + \rho_\lambda^{\mu_2} \Bc{ \inf_{\control_2 \in \mathcal{U}(x_1)} L_1 \np{\control_2, w_2} + ... + \rho_\lambda^{\mu_T} \bc{\inf_{\control \in \mathcal{U}(x_{T-1})} L_{T-1} \np{\control, w_\horizon}} }
+\label{eq3.1}
+\end{equation}
+
+\noindent We can use dynamic programming to compute the value functions of the risk averse problem:
+\begin{equation}
+\begin{aligned}
+V_T(x) &=  0  \\
+\tilde{V}_t(x) &= \Min_{u \in \mathcal{U}(x)} \ L_t(\control \eqsepv \uncertain_{t+1}) + V_{t+1}(x + \rho_c \control^+ -\rho_d^{-1} \control^-) \\
+V_t(x) &= \rho_\lambda^{\mu_{t+1}} \bc{\tilde{V}_t(x)} 
+\end{aligned}
+\label{eq3.2}
+\end{equation}
+
+\noindent and then compute online optimal policies in the same way as for the risk-neutral problem
+\[ \pi_t(x_{t-1} \eqsepv w_t) \in \argmin_u{\ba{L_{t-1}(u \eqsepv w_t) + V_t(x + \rho_c u^+ - \rho^{-1}_d u^-)}} \]
+
+\section{Comparative study}
+
+\begin{figure}[h]
+	\centering
+	\subfloat[Risk neutral $\mu = 0.0157$]{{\includegraphics[width=5cm]{images/RN.png} }}
+	\quad
+	\centering
+	\subfloat[Risk averse $\mu = 0.0162$]{{\includegraphics[width=5cm]{images/RA.png} }}
+	\caption{histogram of daily cost for 1000 scenarios. Risk averse SDP with loss $\rho_\lambda\nc{X} = (1-\lambda) \mathbb{E}\nc{X} + \lambda AV@R_\alpha\nc{X}$, $\lambda = 0.2$, $\alpha = 0.25$}	
+	\label{f222}
+\end{figure}
 
 \bibliographystyle{plain}
 \bibliography{mybib}

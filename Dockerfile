@@ -4,7 +4,6 @@ RUN apt-get update && \
   	apt-get install -y --no-install-recommends wget build-essential hdf5-tools && \
   	rm -rf /var/lib/apt/lists/* 
 
-
 # install Julia
 
 ENV JULIA_DEPOT_PATH=/opt/julia
@@ -25,6 +24,7 @@ RUN julia -e 'Pkg.init()' && \
 	julia -e 'Pkg.add("IJulia")' && \
 	julia -e 'Pkg.add("HDF5")' && \
 	julia -e 'Pkg.add("JLD")' && \
+	julia -e 'Pkg.add("JSON")' && \
 	julia -e 'Pkg.add("Plots")' && \
 	julia -e 'Pkg.add("ProgressMeter")' && \
 	julia -e 'Pkg.add("Clustering")' && \
@@ -33,6 +33,7 @@ RUN julia -e 'Pkg.init()' && \
 RUN julia -e 'using IJulia; IJulia.installkernel("Julia nodeps", "--depwarn=no")' && \
 	julia -e 'using HDF5' && \
 	julia -e 'using JLD' && \
+	julia -e 'using JSON' && \
 	julia -e 'using Plots' && \
 	julia -e 'using ProgressMeter' && \
 	julia -e 'using Clustering' && \
