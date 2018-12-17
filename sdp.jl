@@ -4,6 +4,7 @@
 
 using ProgressMeter
 
+
 function compute_value_functions(train_noise, controls, states, dynamics, interpolation, price, T)
 
 	"""compute value functions: return (T+1, length(states)) array
