@@ -72,20 +72,34 @@ function clean_data_schneider(json_file, new_json)
 
 end
 
-function load_schneider(clean_json, field; site_id=(2, 32))
+function load_schneider(clean_json, field; site_id=(2, 32), winter=true, summer=true)
 	"""load schneider data: return daylong time series of field
 	clean_json > clean json file
 	field > "pv", "load", "sale_price", "purchase_price"
 	site_id > 2, 32, (2, 32)
+	season > winter, summer, both in default mode
 	"""
 
 	data = JSON.parsefile(clean_json)
 	array = 0
 
+	months = []
+	if winter
+		append!(months, [1, 2, 3, 4, 5, 10, 11, 12])
+	end
+	if summer
+		append!(months, [6, 7, 8, 9])
+	end
+
 	for id in site_id
 
 		site = data[string(id)]
 		for key in keys(site)
+
+			month = float(split(key, "-")[2])
+			if !(month in months)
+				continue
+			end
 
 			if array == 0
 				array = site[key][field]
