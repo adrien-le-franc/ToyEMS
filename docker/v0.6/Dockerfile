@@ -28,7 +28,9 @@ RUN julia -e 'Pkg.init()' && \
 	julia -e 'Pkg.add("Plots")' && \
 	julia -e 'Pkg.add("ProgressMeter")' && \
 	julia -e 'Pkg.add("Clustering")' && \
-	julia -e 'Pkg.add("StatsBase")'
+	julia -e 'Pkg.add("StatsBase")' && \
+	julia -e 'Pkg.add("Interpolations")' && \
+	julia -e 'Pkg.add("IterTools")'
 
 RUN julia -e 'using IJulia; IJulia.installkernel("Julia nodeps", "--depwarn=no")' && \
 	julia -e 'using HDF5' && \
@@ -37,7 +39,9 @@ RUN julia -e 'using IJulia; IJulia.installkernel("Julia nodeps", "--depwarn=no")
 	julia -e 'using Plots' && \
 	julia -e 'using ProgressMeter' && \
 	julia -e 'using Clustering' && \
-	julia -e 'using StatsBase'
+	julia -e 'using StatsBase' && \
+	julia -e 'using Interpolations' && \
+	julia -e 'using IterTools'
 
 # install Clp solver and JuMP for PL problems
 

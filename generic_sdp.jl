@@ -138,7 +138,7 @@ function compute_value_functions(train_noise, controls, states, xdict, dynamics,
 
 end
 
-function function compute_online_policy(x, w, price, controls, cost, interpolation, xdict, value_function)
+function compute_online_policy(x, w, price, controls, cost, interpolation, xdict, value_function)
 
 	"""compute online policy: return optimal control at state x observing w
 
