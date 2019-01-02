@@ -1,14 +1,16 @@
-# developed under  Julia 0.6.4
+# developed under  Julia 1.0.3
 #
 # functions for parsing .json data from Schneider 
 
 using JSON, ProgressMeter
 
 
-function clean_data_schneider(json_file, new_json)
+function clean_data_schneider(json_file::String, new_json::String)
+
 	"""clean data schneider: clean and reorder daylong time series then save data dict as .json
 	json_file > original json data
 	new_json > name for clean json file
+
 	"""
 
 	raw = JSON.parsefile(json_file)
@@ -72,12 +74,15 @@ function clean_data_schneider(json_file, new_json)
 
 end
 
-function load_schneider(clean_json, field; site_id=(2, 32), winter=true, summer=true)
+function load_schneider(clean_json::String, field::String; site_id::Union{Int64, Tuple{Vararg{Int64}}}=(2, 32),
+	winter::Bool=true, summer::Bool=true)
+
 	"""load schneider data: return daylong time series of field
 	clean_json > clean json file
 	field > "pv", "load", "sale_price", "purchase_price"
 	site_id > 2, 32, (2, 32)
 	season > winter, summer, both in default mode
+
 	"""
 
 	data = JSON.parsefile(clean_json)
@@ -96,7 +101,7 @@ function load_schneider(clean_json, field; site_id=(2, 32), winter=true, summer=
 		site = data[string(id)]
 		for key in keys(site)
 
-			month = float(split(key, "-")[2])
+			month = parse(Int64, split(key, "-")[2])
 			if !(month in months)
 				continue
 			end

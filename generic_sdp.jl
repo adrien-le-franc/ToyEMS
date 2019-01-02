@@ -1,4 +1,4 @@
-# developed with Julia 0.6.4
+# developed with Julia 1.0.3
 #
 # functions for Stochastic Dynamic Programming 
 
@@ -68,24 +68,23 @@ function state_dictionary(states)
 
 end
 
-function compute_value_functions(train_noise, controls, states, xdict, dynamics, cost, interpolation, price, T)
+function compute_value_functions(train_noise::Union{Noise{T}, Array{Noise{T}}}, controls::Grid{T}, states::Grid{T}, xdict, dynamics::Function, cost::Function, price::Array{T}, horizon::Int64)
 
-	"""compute value functions: return Dict(t=>Array)
+	"""compute value functions: return Dict(1=>Array ... horizon=>Array)
 
-	train_noise > Dict(t=>Dict(1=>(w1, p1), 2=> ...)) with (wi, pi) Tuple of (K, ) Array
-	controls, states > discretized spaces as Tuple of ranges e.g. (1:10, 1:10)
+	train_noise > noise training data
+	controls, states > discretized control and state spaces
 	xdict > Dict mapping states to positions in value_function 
 	dynamics > function(x, u, w) returning next state
 	cost > function returning stagewise cost
-	interpolation > fonction returning interpolated value function
 	price > (T, :) Array
-	T > Int
+	H > time horizon
 
 	"""
 
-	state_size = Tuple([length(s) for s in states])
-	control_size = Tuple([length(s) for s in controls])
-	noise_dim = length(train_noise[1])
+	state_size = dimension(states)
+	control_size = dimension(controls)
+	noise_dim = length(train_noise)
 
 	value_function = Dict()
 	value_function[T+1] = zeros(state_size...)

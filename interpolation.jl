@@ -27,7 +27,7 @@ function nadaraya_watson_estimator(g::Grid{T}, point::Union{T, Array{T, 1}}, f::
 		coordinates = neighbor_inf + collect(step)
 		neighbor = [g[i][coordinates[i]] for i in 1:dimension]
 		value = f[coordinates...]
-		square_distance = (point-neighbor)'*(point-neighbor)
+		square_distance = (point.-neighbor)'*(point.-neighbor)
 		kernel = exp(-square_distance/(2*sigma^2))
 
 		f_hat += value*kernel
@@ -61,7 +61,7 @@ function local_linear_regression(g::Grid{T}, point::Union{T, Array{T, 1}}, f::Ar
 		coordinates = neighbor_inf + collect(step)
 		neighbor = [g.states[i][coordinates[i]] for i in 1:dimension]
 		value = f[coordinates...]
-		square_distance = (point-neighbor)'*(point-neighbor)
+		square_distance = (point.-neighbor)'*(point.-neighbor)
 
 		append!(kernel, exp(-square_distance/(2*sigma^2)))
 		append!(y, value)
@@ -79,7 +79,7 @@ function local_linear_regression(g::Grid{T}, point::Union{T, Array{T, 1}}, f::Ar
 end
 
 function interpolate(g::Grid{T}, point::Union{T, Array{T, 1}}, f::Array{T}; 
-	h::Float64=1/sqrt(10), order::Int=1) where T<:Real
+	h::Float64=1/sqrt(5), order::Int64=1) where T<:Real
 
 	"""interpolate function: return type T
 	g > discretized space grid
