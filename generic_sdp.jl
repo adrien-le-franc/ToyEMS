@@ -2,10 +2,12 @@
 #
 # functions for Stochastic Dynamic Programming 
 
-using ProgressMeter, IterTools
+using ProgressMeter
+
+include("interpolation.jl")
 
 
-function admissible_state(x, states)
+function admissible_state(x::Array{Float64}, states::Grid{Float64})
 	"""check if x is in states: return a boolean
 
 	x > state point
@@ -13,7 +15,7 @@ function admissible_state(x, states)
 
 	"""
 
-	for i in length(x)
+	for i in 1:length(x)
 
 		if x[i] < states[i][1]
 			return false
@@ -27,107 +29,70 @@ function admissible_state(x, states)
 
 end
 
-function is_on_grid(x, states)
-	"""check if x is a grid node of states: return a boolean
-
-	x > state point
-	states > discretized state space as Tuple of ranges e.g. (1:10, 1:10)
-
-	"""
-
-	for i in length(x)
-
-		if !(x[i] in states[i])
-			return false
-		end
-
-	end
-
-	return true
-
-end
-
-function state_dictionary(states)
-	"""compute Dict mapping state values to positions in the state grid: return Dict(x=>coordinates)
-
-	states > discretized space as Tuple of ranges e.g. (1:10, 1:10)
-
-	"""
-
-	xdict = Dict()
-	enumerate_states = [enumerate(x) for x in states]
-	for iterator in product(enumerate_states...)
-
-		coordinates = [i[1] for i in iterator]
-		x = [i[2] for i in iterator]
-		xdict[x] = coordinates
-
-	end
-
-	return xdict
-
-end
-
-function compute_value_functions(train_noise::Union{Noise{T}, Array{Noise{T}}}, controls::Grid{T}, states::Grid{T}, xdict, dynamics::Function, cost::Function, price::Array{T}, horizon::Int64)
+function compute_value_functions(train_noises::Union{Noise{Float64}, Array{Noise{Float64}}}, 
+	controls::Grid{Float64}, states::Grid{Float64}, dynamics::Function, cost::Function, 
+	prices::Array{Float64}, horizon::Int64; order::Int64=1)
 
 	"""compute value functions: return Dict(1=>Array ... horizon=>Array)
 
 	train_noise > noise training data
-	controls, states > discretized control and state spaces
-	xdict > Dict mapping states to positions in value_function 
+	controls, states > discretized control and state spaces 
 	dynamics > function(x, u, w) returning next state
-	cost > function returning stagewise cost
-	price > (T, :) Array
-	H > time horizon
+	cost > function(p, x, u, w) returning stagewise cost
+	price > price per period
+	horizon > time horizon
+	order > interpolation order
 
 	"""
 
-	state_size = dimension(states)
-	control_size = dimension(controls)
-	noise_dim = length(train_noise)
-
 	value_function = Dict()
+	state_size = size(states)
 	value_function[T+1] = zeros(state_size...)
 
 	@showprogress for t in T:-1:1
 
-		w_t = train_noise[t]
-		noises = [zip(w_t[i][1], w_t[i][2]) for i in 1:noise_dim]
-		price = price[t, :]
+		println("t ", t)
 
-		for x in product(states...)
+		value_function[t] = zeros(state_size...)
+		price = prices[t, :]
+		state_iterator = run(states, enumerate=true)
 
+		@showprogress for (state, index) in state_iterator
+
+			#println("x ", state)
+
+			state = collect(state)
 			expectation = 0
+			noise_iterator = run(train_noises, t)
 
-			for iterator in product(noises...)
+			for (noise, probability) in noise_iterator
 
-				w = [i[1] for  i in iterator]
-				p_w = prod([i[2] for  i in iterator])
+				noise = collect(noise)
+				p_noise = prod(probability)
 				v = 10e8
 
-				for u in product(controls...)
+				control_iterator = run(controls)
 
-					next_state = dynamics(x, u, w)
+				for control in control_iterator
+
+					control = collect(control)
+					next_state = dynamics(state, control, noise)
 
 					if !admissible_state(next_state, states)
 						continue
 					end
 
-					if is_on_grid(next_state, states)
-						next_value_function = value_function[t+1][xdict[next_state]]
-					else
-						next_value_function = interpolation(next_state, states, value_function[t+1])
-					end
-
-					v = min(v, cost(price, x, u, w) + next_value_function)
+					next_value_function = interpolate(states, next_state, value_function[t+1],
+					order=order)
+					v = min(v, cost(price, state, control, noise) + next_value_function)
 
 				end
 
-				expectation += w*p_w
+				expectation += v*p_noise
 
 			end
 
-			value_function[t][xdict[x]...] = expectation
+			value_function[t][index...] = expectation
 
 		end
 
@@ -136,6 +101,11 @@ function compute_value_functions(train_noise::Union{Noise{T}, Array{Noise{T}}}, 
 	return value_function
 
 end
+
+
+
+
+
 
 function compute_online_policy(x, w, price, controls, cost, interpolation, xdict, value_function)
 

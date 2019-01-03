@@ -107,7 +107,7 @@ function interpolate(g::Grid{T}, point::Union{T, Array{T, 1}}, f::Array{T};
 		xmax = g.states[i][end]
 
 		if x < xmin || x > xmax
-			throw(BoundsError(x, "interpolation argument must be within the grid"))
+			throw(error("interpolation argument must be within the grid"))
 		elseif x == xmin
 			neighbor_inf[i] = 1
 			continue

@@ -4,6 +4,8 @@
 
 using Clustering
 
+## Grid ##
+
 struct Grid{T<:Real}
 	"""discretized space grid"""
 	states::Array{StepRangeLen{T,Base.TwicePrecision{T},Base.TwicePrecision{T}}, 1}
@@ -20,21 +22,47 @@ function grid_steps(g::Grid{T}) where T<:Real
 	Tuple(grid_steps)
 end
 
+function Grid(states::Vararg{StepRangeLen{T,Base.TwicePrecision{T},Base.TwicePrecision{T}}}) where T<:Real
 
+	Grid{T}(collect(states))
+
+end
+
+function run(input::Grid{T}; enumerate=false) where T<:Real
+
+
+	if !enumerate
+		return Iterators.product(input.states...)
+	else
+		grid_size = size(input)
+		indices = Iterators.product([1:i for i in grid_size]...)
+		return zip(Iterators.product(input.states...), indices)
+	end
+
+end
+
+## Noise ## 
 struct Noise{T<:Real}
 	"""discretized noise space with probabilities"""
+
 	w::Array{T, 2}
 	pw::Array{T, 2}
+
 	function Noise{T}(w::Array{T, 2}, pw::Array{T, 2}) where T<:Real
+
 		if size(w) != size(pw)
 			error("noise size $(size(w)) not equal to probabilities size $(size(pw))")
 		end
 		new(w, pw)
+
 	end
+
 end
 
 function Noise(w::Array{T, 2}, pw::Array{T, 2}) where T<:Real
+
 	Noise{T}(w, pw)
+
 end
 
 function Noise(data::Array{T, 2}, k::Int64) where T<:Real
@@ -60,5 +88,26 @@ function Noise(data::Array{T, 2}, k::Int64) where T<:Real
 
 end
 
+function run(input::Union{Noise{T}, Array{Noise{T}}}, i::Int64) where T<:Real
 
+	if input isa Noise{T}
 
+		return Iterators.zip(input.w[i, :], input.pw[i, :])
+
+	else
+
+		w = [input[1].w[i, :]]
+		p = [input[1].pw[i, :]]
+
+		for j in 2:length(input)
+
+			push!(w, input[j].w[i, :])
+			push!(p, input[j].pw[i, :])
+
+		end
+
+		return Iterators.zip(Iterators.product(w...), Iterators.product(p...))
+
+	end
+
+end
