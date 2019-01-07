@@ -47,17 +47,17 @@ function compute_value_functions(train_noises::Union{Noise{Float64}, Array{Noise
 
 	value_function = Dict()
 	state_size = size(states)
-	value_function[T+1] = zeros(state_size...)
+	value_function[horizon+1] = zeros(state_size...)
 
-	@showprogress for t in T:-1:1
+	@showprogress for t in horizon:-1:1
 
-		println("t ", t)
+		#println("t ", t)
 
 		value_function[t] = zeros(state_size...)
 		price = prices[t, :]
 		state_iterator = run(states, enumerate=true)
 
-		@showprogress for (state, index) in state_iterator
+		for (state, index) in state_iterator
 
 			#println("x ", state)
 
@@ -84,6 +84,7 @@ function compute_value_functions(train_noises::Union{Noise{Float64}, Array{Noise
 
 					next_value_function = interpolate(states, next_state, value_function[t+1],
 					order=order)
+
 					v = min(v, cost(price, state, control, noise) + next_value_function)
 
 				end
@@ -102,7 +103,86 @@ function compute_value_functions(train_noises::Union{Noise{Float64}, Array{Noise
 
 end
 
+function test_compute_value_functions(train_noises::Union{Noise{Float64}, Array{Noise{Float64}}}, 
+	controls::Grid{Float64}, states::Grid{Float64}, dynamics::Function, cost::Function, 
+	interpolator::Function, prices::Array{Float64}, horizon::Int64; order::Int64=1)
 
+	"""compute value functions: return Dict(1=>Array ... horizon=>Array)
+
+	train_noise > noise training data
+	controls, states > discretized control and state spaces 
+	dynamics > function(x, u, w) returning next state
+	cost > function(p, x, u, w) returning stagewise cost
+	price > price per period
+	horizon > time horizon
+	order > interpolation order
+
+	"""
+
+	value_function = Dict()
+	state_size = size(states)
+	value_function[horizon+1] = zeros(state_size...)
+
+	dx = grid_steps(states)[1]
+
+	value_function = [zeros(state_size...) for t in 1:T+1]
+
+
+
+
+
+	@showprogress for t in horizon:-1:1
+
+		#println("t ", t)
+
+		#value_function[t] = zeros(state_size...)
+		price = prices[t, :]
+		state_iterator = run(states, enumerate=true)
+
+		for (state, index) in state_iterator
+
+			#println("x ", state)
+
+			state = collect(state)
+			expectation = 0
+			noise_iterator = run(train_noises, t)
+
+			for (noise, probability) in noise_iterator
+
+				noise = collect(noise)
+				p_noise = prod(probability)
+				v = 10e8
+
+				control_iterator = run(controls)
+
+				for control in control_iterator
+
+					control = collect(control)
+					next_state = dynamics(state, control, noise)
+
+					if !admissible_state(next_state, states)
+						continue
+					end
+
+					next_value_function = interpolator(next_state, dx, value_function[t+1])
+
+					v = min(v, cost(price, state, control, noise) + next_value_function)
+
+				end
+
+				expectation += v*p_noise
+
+			end
+
+			value_function[t][index...] = expectation
+
+		end
+
+	end
+
+	return value_function
+
+end
 
 
 

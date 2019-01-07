@@ -41,7 +41,7 @@ function compute_value_functions(train_noise, controls, states, dynamics, interp
                 
                 for u in controls
                     
-                    next_state = dynamics(x, u)
+                    next_state = dynamics(x, u, w)
                     if next_state < xmin || next_state > xmax
                         continue
                     end
