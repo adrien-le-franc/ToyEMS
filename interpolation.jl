@@ -6,7 +6,7 @@ using LinearAlgebra
 
 include("struct.jl")
 
-function nadaraya_watson_estimator(g::Grid{T}, point::Union{T, Array{T, 1}}, f::Array{T}, 
+function nadaraya_watson_estimator(g::Grid, point::Union{T, Array{T, 1}}, f::Array{T}, 
 	dimension::Int64, sigma::Float64, neighbor_inf::Array{Int64, 1}, 
 	neighbor_steps::Array{Array{Int64,1},1}) where T<:Real
 
@@ -39,7 +39,7 @@ function nadaraya_watson_estimator(g::Grid{T}, point::Union{T, Array{T, 1}}, f::
 
 end
 
-function local_linear_regression(g::Grid{T}, point::Union{T, Array{T, 1}}, f::Array{T}, 
+function local_linear_regression(g::Grid, point::Union{T, Array{T, 1}}, f::Array{T}, 
 	dimension::Int64, sigma::Float64, neighbor_inf::Array{Int64, 1}, 
 	neighbor_steps::Array{Array{Int64,1},1}) where T<:Real
 
@@ -78,7 +78,7 @@ function local_linear_regression(g::Grid{T}, point::Union{T, Array{T, 1}}, f::Ar
 
 end
 
-function interpolate(g::Grid{T}, point::Union{T, Array{T, 1}}, f::Array{T}; 
+function interpolate(g::Grid, point::Union{T, Array{T, 1}}, f::Array{T}; 
 	h::Float64=1/sqrt(5), order::Int64=1) where T<:Real
 
 	"""interpolate function: return type T

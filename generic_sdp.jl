@@ -2,12 +2,12 @@
 #
 # functions for Stochastic Dynamic Programming 
 
-using ProgressMeter
+using ProgressMeter, Interpolations
 
-include("interpolation.jl")
+#include("interpolation.jl")
+include("struct.jl")
 
-
-function admissible_state(x::Array{Float64}, states::Grid{Float64})
+function admissible_state(x::Array{Float64}, states::Grid)
 	"""check if x is in states: return a boolean
 
 	x > state point
@@ -29,8 +29,9 @@ function admissible_state(x::Array{Float64}, states::Grid{Float64})
 
 end
 
-function compute_value_functions(train_noises::Union{Noise{Float64}, Array{Noise{Float64}}}, 
-	controls::Grid{Float64}, states::Grid{Float64}, dynamics::Function, cost::Function, 
+
+function compute_value_functions(train_noises::Union{Noise, Array{Noise}}, 
+	controls::Grid, states::Grid, dynamics::Function, cost::Function, 
 	prices::Array{Float64}, horizon::Int64; order::Int64=1)
 
 	"""compute value functions: return Dict(1=>Array ... horizon=>Array)
@@ -45,33 +46,28 @@ function compute_value_functions(train_noises::Union{Noise{Float64}, Array{Noise
 
 	"""
 
-	value_function = Dict()
 	state_size = size(states)
-	value_function[horizon+1] = zeros(state_size...)
+	state_iterator = run(states, enumerate=true)
+	control_iterator = run(controls)
+
+	value_function = [zeros(state_size...) for t in 1:T+1]
+	expectation = 0.
 
 	@showprogress for t in horizon:-1:1
 
-		#println("t ", t)
-
-		value_function[t] = zeros(state_size...)
 		price = prices[t, :]
-		state_iterator = run(states, enumerate=true)
-
+		noise_iterator = run(train_noises, t)
+		
 		for (state, index) in state_iterator
 
-			#println("x ", state)
-
 			state = collect(state)
-			expectation = 0
-			noise_iterator = run(train_noises, t)
+			expectation = 0.
 
 			for (noise, probability) in noise_iterator
 
 				noise = collect(noise)
 				p_noise = prod(probability)
 				v = 10e8
-
-				control_iterator = run(controls)
 
 				for control in control_iterator
 
@@ -82,9 +78,7 @@ function compute_value_functions(train_noises::Union{Noise{Float64}, Array{Noise
 						continue
 					end
 
-					next_value_function = interpolate(states, next_state, value_function[t+1],
-					order=order)
-
+					#next_value_function = interpolate(states, next_state, value_function[t+1], order=order)
 					v = min(v, cost(price, state, control, noise) + next_value_function)
 
 				end
@@ -103,8 +97,9 @@ function compute_value_functions(train_noises::Union{Noise{Float64}, Array{Noise
 
 end
 
-function test_compute_value_functions(train_noises::Union{Noise{Float64}, Array{Noise{Float64}}}, 
-	controls::Grid{Float64}, states::Grid{Float64}, dynamics::Function, cost::Function, 
+
+function test_compute_value_functions(train_noises::Union{Noise, Array{Noise}}, 
+	controls::Grid, states::Grid, dynamics::Function, cost::Function, 
 	interpolator::Function, prices::Array{Float64}, horizon::Int64; order::Int64=1)
 
 	"""compute value functions: return Dict(1=>Array ... horizon=>Array)
@@ -119,41 +114,31 @@ function test_compute_value_functions(train_noises::Union{Noise{Float64}, Array{
 
 	"""
 
-	value_function = Dict()
 	state_size = size(states)
-	value_function[horizon+1] = zeros(state_size...)
-
-	dx = grid_steps(states)[1]
+	state_steps = grid_steps(states)
+	state_iterator = run(states, enumerate=true)
+	control_iterator = run(controls)
 
 	value_function = [zeros(state_size...) for t in 1:T+1]
-
-
-
-
+	expectation = 0.
 
 	@showprogress for t in horizon:-1:1
 
-		#println("t ", t)
-
-		#value_function[t] = zeros(state_size...)
 		price = prices[t, :]
-		state_iterator = run(states, enumerate=true)
+		noise_iterator = run(train_noises, t)
 
+		interpolator = interpolate(value_function[t+1], BSpline(Linear()))
+		
 		for (state, index) in state_iterator
 
-			#println("x ", state)
-
 			state = collect(state)
-			expectation = 0
-			noise_iterator = run(train_noises, t)
+			expectation = 0.
 
 			for (noise, probability) in noise_iterator
 
 				noise = collect(noise)
 				p_noise = prod(probability)
 				v = 10e8
-
-				control_iterator = run(controls)
 
 				for control in control_iterator
 
@@ -164,7 +149,11 @@ function test_compute_value_functions(train_noises::Union{Noise{Float64}, Array{
 						continue
 					end
 
-					next_value_function = interpolator(next_state, dx, value_function[t+1])
+					#println("next state $(typeof(next_state))")
+
+					where = next_state ./ state_steps .+ 1.
+
+					next_value_function = interpolator(where...)
 
 					v = min(v, cost(price, state, control, noise) + next_value_function)
 

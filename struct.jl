@@ -6,29 +6,29 @@ using Clustering
 
 ## Grid ##
 
-struct Grid{T<:Real}
+struct Grid
 	"""discretized space grid"""
-	states::Array{StepRangeLen{T,Base.TwicePrecision{T},Base.TwicePrecision{T}}, 1}
+	states::Array{StepRangeLen{Float64,Base.TwicePrecision{Float64},Base.TwicePrecision{Float64}}, 1}
 end
 
 Base.size(g::Grid) = Tuple([length(g.states[i]) for i in 1:length(g.states)])
 Base.length(g::Grid) = length(size(g))
 Base.getindex(g::Grid, i::Int) = g.states[i]
 
-function grid_steps(g::Grid{T}) where T<:Real
+function grid_steps(g::Grid)
 	"""grid steps, assuming a regular space grid: return type Tuple"""
 	dimension = length(size(g))
 	grid_steps = [g.states[i][2] - g.states[i][1] for i in 1:dimension]
-	Tuple(grid_steps)
+	#Tuple(grid_steps)
 end
 
-function Grid(states::Vararg{StepRangeLen{T,Base.TwicePrecision{T},Base.TwicePrecision{T}}}) where T<:Real
+function Grid(states::Vararg{StepRangeLen{Float64,Base.TwicePrecision{Float64},Base.TwicePrecision{Float64}}})
 
-	Grid{T}(collect(states))
+	Grid(collect(states))
 
 end
 
-function run(input::Grid{T}; enumerate=false) where T<:Real
+function run(input::Grid; enumerate=false)
 
 
 	if !enumerate
@@ -42,13 +42,13 @@ function run(input::Grid{T}; enumerate=false) where T<:Real
 end
 
 ## Noise ## 
-struct Noise{T<:Real}
+struct Noise
 	"""discretized noise space with probabilities"""
 
-	w::Array{T, 2}
-	pw::Array{T, 2}
+	w::Array{Float64, 2}
+	pw::Array{Float64, 2}
 
-	function Noise{T}(w::Array{T, 2}, pw::Array{T, 2}) where T<:Real
+	function Noise(w::Array{Float64, 2}, pw::Array{Float64, 2})
 
 		if size(w) != size(pw)
 			error("noise size $(size(w)) not equal to probabilities size $(size(pw))")
@@ -59,13 +59,13 @@ struct Noise{T<:Real}
 
 end
 
-function Noise(w::Array{T, 2}, pw::Array{T, 2}) where T<:Real
+#function Noise(w::Array{Float64, 2}, pw::Array{Float64, 2}) 
+#
+#	Noise(w, pw)
+#
+#end
 
-	Noise{T}(w, pw)
-
-end
-
-function Noise(data::Array{T, 2}, k::Int64) where T<:Real
+function Noise(data::Array{Float64, 2}, k::Int64) 
 
 	"""dicretize noise space to k values using Kmeans: return type Noise
 	data > time series data of dimension (horizon, n_data)
@@ -84,13 +84,13 @@ function Noise(data::Array{T, 2}, k::Int64) where T<:Real
 		pw[t, :] = kmeans_w.cweights / n_data
 	end
 
-	return Noise{T}(w, pw)
+	return Noise(w, pw)
 
 end
 
-function run(input::Union{Noise{T}, Array{Noise{T}}}, i::Int64) where T<:Real
+function run(input::Union{Noise, Array{Noise}}, i::Int64) 
 
-	if input isa Noise{T}
+	if input isa Noise
 
 		return Iterators.zip(input.w[i, :], input.pw[i, :])
 
