@@ -4,7 +4,6 @@
 
 using ProgressMeter, Interpolations
 
-#include("interpolation.jl")
 include("struct.jl")
 
 function admissible_state(x::Array{Float64}, states::Grid)
@@ -29,78 +28,9 @@ function admissible_state(x::Array{Float64}, states::Grid)
 
 end
 
-
 function compute_value_functions(train_noises::Union{Noise, Array{Noise}}, 
 	controls::Grid, states::Grid, dynamics::Function, cost::Function, 
 	prices::Array{Float64}, horizon::Int64; order::Int64=1)
-
-	"""compute value functions: return Dict(1=>Array ... horizon=>Array)
-
-	train_noise > noise training data
-	controls, states > discretized control and state spaces 
-	dynamics > function(x, u, w) returning next state
-	cost > function(p, x, u, w) returning stagewise cost
-	price > price per period
-	horizon > time horizon
-	order > interpolation order
-
-	"""
-
-	state_size = size(states)
-	state_iterator = run(states, enumerate=true)
-	control_iterator = run(controls)
-
-	value_function = [zeros(state_size...) for t in 1:T+1]
-	expectation = 0.
-
-	@showprogress for t in horizon:-1:1
-
-		price = prices[t, :]
-		noise_iterator = run(train_noises, t)
-		
-		for (state, index) in state_iterator
-
-			state = collect(state)
-			expectation = 0.
-
-			for (noise, probability) in noise_iterator
-
-				noise = collect(noise)
-				p_noise = prod(probability)
-				v = 10e8
-
-				for control in control_iterator
-
-					control = collect(control)
-					next_state = dynamics(state, control, noise)
-
-					if !admissible_state(next_state, states)
-						continue
-					end
-
-					#next_value_function = interpolate(states, next_state, value_function[t+1], order=order)
-					v = min(v, cost(price, state, control, noise) + next_value_function)
-
-				end
-
-				expectation += v*p_noise
-
-			end
-
-			value_function[t][index...] = expectation
-
-		end
-
-	end
-
-	return value_function
-
-end
-
-
-function test_compute_value_functions(train_noises::Union{Noise, Array{Noise}}, 
-	controls::Grid, states::Grid, dynamics::Function, cost::Function, 
-	interpolator::Function, prices::Array{Float64}, horizon::Int64; order::Int64=1)
 
 	"""compute value functions: return Dict(1=>Array ... horizon=>Array)
 
@@ -149,10 +79,7 @@ function test_compute_value_functions(train_noises::Union{Noise, Array{Noise}},
 						continue
 					end
 
-					#println("next state $(typeof(next_state))")
-
 					where = next_state ./ state_steps .+ 1.
-
 					next_value_function = interpolator(where...)
 
 					v = min(v, cost(price, state, control, noise) + next_value_function)
@@ -172,9 +99,6 @@ function test_compute_value_functions(train_noises::Union{Noise, Array{Noise}},
 	return value_function
 
 end
-
-
-
 
 function compute_online_policy(x, w, price, controls, cost, interpolation, xdict, value_function)
 
